@@ -1,0 +1,138 @@
+\documentclass{beamer}
+
+\usetheme{CambridgeUS}
+\usecolortheme{orchid}
+
+\usepackage{alltt}
+\usepackage{xcolor}
+\usepackage{wrapfig}
+\usepackage{siunitx}
+\usepackage{inconsolata}
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{nicefrac}
+\usepackage[font+=small]{caption}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, positioning}
+\usepackage{pgfplots}
+
+\begin{document}
+
+\title[Badger]{Badger: automated and repeatable test cases}
+\author[E. Fonn]{
+  E.~Fonn\inst{1,2} \and
+  A.~M.~Kvarving\inst{2} \and
+  T.~Kvamsdal\inst{3} \and
+}
+\institute[SINTEF]{
+  \inst{1}%
+  \url{eivind.fonn@sintef.no}
+  \and \inst{2}%
+  Applied Mathematics, SINTEF ICT
+  \and \inst{3}%
+  Department of Mathematical Sciences, NTNU
+}
+\date[October 2015]{}
+
+\newcommand{\rmc}{{\text{c}}}
+\newcommand{\rmf}{{\text{f}}}
+\newcommand{\rmt}{{\text{t}}}
+% \newcommand{\rms}{{\text{s}}}
+\newcommand{\rmu}{{\text{u}}}
+\newcommand{\rmq}{{\text{q}}}
+% \newcommand{\rmp}{{\text{p}}}
+\newcommand{\rmv}{{\text{v}}}
+
+\titlegraphic{\includegraphics[width=0.3\textwidth]{common/sintef}}
+
+\begin{frame}
+  \titlepage{}
+\end{frame}
+
+\section{The problem}
+
+\begin{frame}
+  \frametitle{The problem}
+
+  \begin{itemize}
+  \item Test cases are built, run, published and then forgotten about
+  \item Reproducing a case from memory is nigh on impossible
+  \item If scripts do exist, they are procedural and not declarative
+  \end{itemize}
+\end{frame}
+
+\section{Badger}
+
+\begin{frame}
+  \frametitle{Badger}
+
+  Badger is a BATCH job runnER, specialized for numerical applications.
+
+  \begin{itemize}
+  \item Test cases are specified in a simple declarative language
+  \item A powerful template language allows us to reuse the same setup files for
+    many different instances.
+  \item Ties in easily with regression testing and continuous integration tools.
+  \end{itemize}
+\end{frame}
+
+\section{Example}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+executable: /home/eivindf/.../PoroElasticity
+cmdargs: -2D -mixed terzhagi.xinp
+templates: terzhagi.xinp
+variables:
+  degree: [1, 2, 3]
+  elements: [8, 16, 32]
+constants:
+  endtime: 10
+parse:
+  - !!str 'Relative \|p-p^h\|_l2 : (?P<p_rel_l2>[^\s]+)'
+  - !!str 'Total time\s+\|\s+(?P<cpu_time>[^\s]+)
+           \s+\|\s+(?P<wall_time>[^\s]+)'
+types:
+  p_rel_l2: float
+  cpu_time: float
+  wall_time: float
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+  The template file contains lines such as the following (for IFEM).
+
+\begin{verbatim}
+<raiseorder patch="1" u="{{ degree-1 }}" v="{{ degree-1 }}" />
+
+<refine type="uniform" patch="1"
+        u="{{ (elements//8)-1 }}" v="{{ elements-1 }}" />
+
+<timestepping start="0" end="{{ endtime }}"
+              dt="{{ 1.0/elements**(degree+1) }}" />
+\end{verbatim}
+
+  The underlying language is arbitrary, here XML as an example.
+\end{frame}
+
+\section{Feature wishlist}
+
+\begin{frame}
+  \frametitle{Feature wishlist}
+  
+  \begin{itemize}
+  \item Running pre- and post steps. (Geometry generation, plotting, etc.)
+  \item Running a sparse subset of all possible test cases.
+  \item Running several cases in parallel with near optimal distribution.
+  \item Reading data from generated files and not just standard out.
+  \item An easier way to read output than having to write regular expressions,
+    which are difficult and error-prone.
+  \item Options to execute dry runs and verbose runs.
+  \item Other output formats.
+  \item Grabbing multiple data points from each run instead of just the last
+    match for each regular expression.
+  \item Incremental output.
+  \end{itemize}
+\end{frame}
+
+\end{document}
